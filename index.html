@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List นักเรียน</title>
+    <!-- ส่วนที่ 1: CSS - สไตล์และการจัดวาง -->
+    <style>
+        /* กำหนดตัวแปรสี เพื่อสลับโหมดมืด-สว่างได้ง่าย */
+        :root {
+            --bg-color: #f4f7f9;
+            --card-color: #ffffff;
+            --text-color: #333333;
+            --primary-color: #4a90e2; /* สีฟ้าสบายตา */
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+            --border-color: #dddddd;
+        }
+        /* โหมดมืด */
+        body.dark-mode {
+            --bg-color: #1a1a1a;
+            --card-color: #2c2c2c;
+            --text-color: #eeeeee;
+            --border-color: #444444;
+        }
+
+        /* สไตล์พื้นฐาน */
+        body {
+            font-family: 'Sarabun', sans-serif; /* ฟอนต์อ่านง่าย ภาษาไทย */
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s; /* ทำให้สลับโหมดนุ่มนวล */
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto; /* จัดกึ่งกลาง */
+            background-color: var(--card-color);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1, h2 { text-align: center; color: var(--primary-color); }
+        
+        /* ฟอร์มเพิ่ม/แก้ไขงาน */
+        .form-section { 
+            display: grid; 
+            gap: 15px; 
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        .form-section input, .form-section select, .form-section button {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            font-size: 16px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        .form-section button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .form-section button:hover { opacity: 0.9; }
+
+        /* ส่วนกรองและค้นหา */
+        .filter-section {
+            display: flex;
+            flex-wrap: wrap; /* ให้ขึ้นบรรทัดใหม่ในมือถือ */
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .filter-section input, .filter-section select {
+            flex-grow: 1; /* ให้กล่องยืดได้ */
+            padding: 8px;
+        }
+
+        /* ตารางแสดงงาน */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th { background-color: var(--primary-color); color: white; }
+        tr:hover { background-color: rgba(74, 144, 226, 0.1); } /* ไฮไลท์เมื่อเอาเมาส์ชี้ */
+
+        /* ปุ่มในตาราง */
+        .action-btn { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; color: white;}
+        .btn-edit { background-color: #f39c12; }
+        .btn-delete { background-color: var(--danger-color); }
+        .btn-status { background-color: var(--success-color); }
+
+        /* Dashboard */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* จัดเรียงอัตโนมัติตามจอ */
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background-color: var(--bg-color);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 5px solid var(--primary-color);
+        }
+        .card h3 { margin: 0; font-size: 16px; }
+        .card p { margin: 5px 0 0; font-size: 24px; font-weight: bold; }
+
+        /* Responsive: สำหรับจอมือถือ */
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            table, thead, tbody, th, td, tr { display: block; } /* ทำให้ตารางเลื่อนแนวตั้ง */
+            thead tr { display: none; } /* ซ่อนหัวตาราง */
+            tr { border: 1px solid var(--border-color); margin-bottom: 10px; }
+            td { border: none; position: relative; padding-left: 50%; }
+            td:before { /* แสดงชื่อหัวคอลัมน์ด้านซ้าย */
+                position: absolute;
+                left: 10px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                font-weight: bold;
+            }
+            td:nth-of-type(1):before { content: "ชื่องาน"; }
+            td:nth-of-type(2):before { content: "รายวิชา"; }
+            td:nth-of-type(3):before { content: "กำหนดส่ง"; }
+            td:nth-of-type(4):before { content: "ความสำคัญ"; }
+            td:nth-of-type(5):before { content: "สถานะ"; }
+            td:nth-of-type(6):before { content: "จัดการ"; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>📝 To-Do List นักเรียน</h1>
+        <button id="toggleThemeBtn" style="float: right;">สลับโหมดมืด/สว่าง</button>
+
+        <!-- ส่วนที่ 2: Dashboard - หน้ารายงาน -->
+        <h2>ภาพรวม</h2>
+        <div class="dashboard" id="dashboard">
+            <!-- ข้อมูลจะถูกสร้างด้วย JS -->
+        </div>
+
+        <!-- ส่วนที่ 3: ฟอร์มเพิ่ม/แก้ไขงาน -->
+        <h2>เพิ่ม / แก้ไขงาน</h2>
+        <form class="form-section" id="taskForm">
+            <input type="hidden" id="taskId"> <!-- เก็บ ID สำหรับแก้ไข -->
+            <input type="text" id="taskName" placeholder="ชื่องาน เช่น การบ้านคณิต" required>
+            <input type="text" id="taskSubject" placeholder="รายวิชา เช่น คณิตศาสตร์" required>
+            <input type="date" id="taskDueDate" required>
+            <select id="taskPriority">
+                <option value="ต่ำ">ความสำคัญ: ต่ำ</option>
+                <option value="ปานกลาง">ความสำคัญ: ปานกลาง</option>
+                <option value="สูง">ความสำคัญ: สูง</option>
+            </select>
+            <button type="submit" id="saveBtn">เพิ่มรายการ</button>
+        </form>
+
+        <!-- ส่วนที่ 4: ฟิลเตอร์ค้นหา -->
+        <h2>รายการงาน</h2>
+        <div class="filter-section">
+            <input type="text" id="searchInput" placeholder="ค้นหาตามชื่องาน...">
+            <select id="filterSubject"><option value="">กรองตามรายวิชา</option></select>
+            <select id="filterStatus">
+                <option value="">กรองตามสถานะ</option>
+                <option value="ยังไม่ทำ">ยังไม่ทำ</option>
+                <option value="กำลังทำ">กำลังทำ</option>
+                <option value="เสร็จแล้ว">เสร็จแล้ว</option>
+            </select>
+            <select id="filterPriority">
+                <option value="">กรองตามความสำคัญ</option>
+                <option value="สูง">สูง</option>
+                <option value="ปานกลาง">ปานกลาง</option>
+                <option value="ต่ำ">ต่ำ</option>
+            </select>
+            <button id="clearCompletedBtn" style="background-color: var(--danger-color); color:white;">ลบงานที่เสร็จแล้ว</button>
+        </div>
+
+        <!-- ส่วนที่ 5: ตารางแสดงรายการ -->
+        <table>
+            <thead>
+                <tr>
+                    <th>ชื่องาน</th>
+                    <th>รายวิชา</th>
+                    <th>กำหนดส่ง</th>
+                    <th>ความสำคัญ</th>
+                    <th>สถานะ</th>
+                    <th>จัดการ</th>
+                </tr>
+            </thead>
+            <tbody id="taskList">
+                <!-- รายการจะถูกสร้างด้วย JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ส่วนที่ 6: JavaScript - ตรรกะการทำงาน -->
+    <script>
+        // 1. ตัวแปรและ DOM Elements
+        const taskForm = document.getElementById('taskForm');
+        const taskList = document.getElementById('taskList');
+        const dashboard = document.getElementById('dashboard');
+        const STORAGE_KEY = 'studentTodoList'; // ชื่อที่ใช้เก็บใน LocalStorage
+
+        let tasks = []; // Array สำหรับเก็บงานทั้งหมด
+        let editMode = false; // สถานะว่ากำลังแก้ไขอยู่หรือไม่
+
+        // 2. ฟังก์ชันหลักในการโหลดและบันทึกข้อมูล
+        // อธิบาย: LocalStorage คือที่เก็บข้อมูลในเบราว์เซอร์ของผู้ใช้
+        // เราจะเก็บ Array tasks ทั้งหมดเป็นข้อความ JSON
+        function loadTasks() {
+            const storedTasks = localStorage.getItem(STORAGE_KEY);
+            tasks = storedTasks ? JSON.parse(storedTasks) : []; // ถ้ามีข้อมูลให้แปลงกลับเป็น Array
+        }
+        function saveTasks() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); // แปลง Array เป็นข้อความ JSON แล้วเก็บ
+            render(); // บันทึกเสร็จให้วาดหน้าจอใหม่
+        }
+
+        // 3. ฟังก์ชันจัดการข้อมูล
+        function addTask(task) {
+            task.id = Date.now(); // ใช้เวลาเป็น ID ที่ไม่ซ้ำกัน
+            task.status = 'ยังไม่ทำ'; // ค่าเริ่มต้น
+            tasks.push(task);
+            saveTasks();
+        }
+        function updateTask(updatedTask) {
+            tasks = tasks.map(task => task.id === updatedTask.id ? updatedTask : task);
+            saveTasks();
+            editMode = false;
+            taskForm.reset();
+            document.getElementById('saveBtn').innerText = 'เพิ่มรายการ';
+        }
+        function deleteTask(id) {
+            if(confirm('ต้องการลบงานนี้ใช่หรือไม่?')){ // ถามก่อนลบ
+                tasks = tasks.filter(task => task.id !== id);
+                saveTasks();
+            }
+        }
+        function changeStatus(id) {
+            const task = tasks.find(task => task.id === id);
+            // วนสถานะ: ยังไม่ทำ -> กำลังทำ -> เสร็จแล้ว -> ยังไม่ทำ
+            if (task.status === 'ยังไม่ทำ') task.status = 'กำลังทำ';
+            else if (task.status === 'กำลังทำ') task.status = 'เสร็จแล้ว';
+            else task.status = 'ยังไม่ทำ';
+            saveTasks();
+        }
+        function deleteCompletedTasks() {
+            if(confirm('ต้องการลบงานที่เสร็จแล้วทั้งหมดใช่หรือไม่?')){
+                tasks = tasks.filter(task => task.status !== 'เสร็จแล้ว');
+                saveTasks();
+            }
+        }
+
+        // 4. ฟังก์ชันแสดงผลบนหน้าจอ Render
+        function render() {
+            renderTasks();
+            renderDashboard();
+            renderSubjectFilter();
+        }
+        
+        function renderTasks() {
+            // 4.1 กรองและค้นหา
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filterSubject = document.getElementById('filterSubject').value;
+            const filterStatus = document.getElementById('filterStatus').value;
+            const filterPriority = document.getElementById('filterPriority').value;
+
+            let filteredTasks = tasks.filter(task => {
+                return task.name.toLowerCase().includes(searchTerm) &&
+                       (filterSubject === '' || task.subject === filterSubject) &&
+                       (filterStatus === '' || task.status === filterStatus) &&
+                       (filterPriority === '' || task.priority === filterPriority);
+            });
+
+            // 4.2 เรียงลำดับ: งานที่ใกล้กำหนดส่งก่อน
+            filteredTasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+            // 4.3 วาดตาราง
+            taskList.innerHTML = ''; // ล้างของเก่า
+            filteredTasks.forEach(task => {
+                const row = document.createElement('tr');
+                // ใส่สีตามความสำคัญ
+                if (task.priority === 'สูง') row.style.borderLeft = '5px solid var(--danger-color)';
+                if (task.priority === 'ปานกลาง') row.style.borderLeft = '5px solid #f39c12';
+                
+                row.innerHTML = `
+                    <td>${task.name}</td>
+                    <td>${task.subject}</td>
+                    <td>${new Date(task.dueDate).toLocaleDateString('th-TH')}</td>
+                    <td>${task.priority}</td>
+                    <td>${task.status}</td>
+                    <td>
+                        <button class="action-btn btn-status" onclick="changeStatus(${task.id})">เปลี่ยนสถานะ</button>
+                        <button class="action-btn btn-edit" onclick="editTask(${task.id})">แก้ไข</button>
+                        <button class="action-btn btn-delete" onclick="deleteTask(${task.id})">ลบ</button>
+                    </td>
+                `;
+                taskList.appendChild(row);
+            });
+        }
+
+        function renderDashboard() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.status === 'เสร็จแล้ว').length;
+            const pending = total - completed;
+            // งานเร่งด่วน: ความสำคัญสูง และยังไม่เสร็จ และใกล้ครบกำหนดใน 3 วัน
+            const urgent = tasks.filter(t => 
+                t.priority === 'สูง' && 
+                t.status !== 'เสร็จแล้ว' && 
+                new Date(t.dueDate) < new Date(new Date().getTime() + 3 * 24 * 60 * 60 * 1000)
+            ).length;
+
+            // นับงานแยกตามรายวิชา
+            const subjectCounts = tasks.reduce((acc, task) => {
+                acc[task.subject] = (acc[task.subject] || 0) + 1;
+                return acc;
+            }, {});
+
+            dashboard.innerHTML = `
+                <div class="card"><h3>งานทั้งหมด</h3><p>${total}</p></div>
+                <div class="card"><h3>ยังไม่เสร็จ</h3><p>${pending}</p></div>
+                <div class="card"><h3>เสร็จแล้ว</h3><p>${completed}</p></div>
+                <div class="card"><h3>งานเร่งด่วน</h3><p>${urgent}</p></div>
+                ${Object.keys(subjectCounts).map(subject => `
+                    <div class="card"><h3>${subject}</h3><p>${subjectCounts[subject]}</p></div>
+                `).join('')}
+            `;
+        }
+        
+        function renderSubjectFilter() {
+            const filter = document.getElementById('filterSubject');
+            const subjects = [...new Set(tasks.map(task => task.subject))]; // หารายวิชาที่ไม่ซ้ำ
+            filter.innerHTML = '<option value="">กรองตามรายวิชา</option>';
+            subjects.forEach(subject => {
+                filter.innerHTML += `<option value="${subject}">${subject}</option>`;
+            });
+        }
+
+        // 5. Event Listeners - การรับคำสั่งจากผู้ใช้
+        taskForm.addEventListener('submit', (e) => {
+            e.preventDefault(); // ป้องกันการรีโหลดหน้า
+            const task = {
+                id: document.getElementById('taskId').value,
+                name: document.getElementById('taskName').value,
+                subject: document.getElementById('taskSubject').value,
+                dueDate: document.getElementById('taskDueDate').value,
+                priority: document.getElementById('taskPriority').value,
+            };
+            if (editMode) {
+                task.status = tasks.find(t => t.id == task.id).status; // เก็บสถานะเดิมไว้
+                updateTask(task);
+            } else {
+                addTask(task);
+            }
+            taskForm.reset();
+        });
+
+        function editTask(id) { // ฟังก์ชันนี้ถูกเรียกจากปุ่มในตาราง
+            const task = tasks.find(task => task.id === id);
+            document.getElementById('taskId').value = task.id;
+            document.getElementById('taskName').value = task.name;
+            document.getElementById('taskSubject').value = task.subject;
+            document.getElementById('taskDueDate').value = task.dueDate;
+            document.getElementById('taskPriority').value = task.priority;
+            editMode = true;
+            document.getElementById('saveBtn').innerText = 'บันทึกการแก้ไข';
+        }
+
+        // รับฟังการเปลี่ยนแปลงในช่องกรอง เพื่อให้ render ใหม่ทันที
+        document.getElementById('searchInput').addEventListener('input', renderTasks);
+        document.getElementById('filterSubject').addEventListener('change', renderTasks);
+        document.getElementById('filterStatus').addEventListener('change', renderTasks);
+        document.getElementById('filterPriority').addEventListener('change', renderTasks);
+        document.getElementById('clearCompletedBtn').addEventListener('click', deleteCompletedTasks);
+        
+        // สลับโหมดมืด/สว่าง
+        document.getElementById('toggleThemeBtn').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+        });
+
+        // 6. เริ่มการทำงานครั้งแรก
+        loadTasks(); // โหลดข้อมูลจาก LocalStorage
+        render(); // แสดงผลครั้งแรก
+
+    </script>
+</body>
+  </html>
